@@ -115,6 +115,7 @@ impl Engine for UniversalEngine {
         binary: &[u8],
         tunables: &dyn Tunables,
     ) -> Result<Arc<dyn Artifact>, CompileError> {
+        println!("Universal Compiler compiling ....");
         Ok(Arc::new(UniversalArtifact::new(&self, binary, tunables)?))
     }
 

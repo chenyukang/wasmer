@@ -100,6 +100,7 @@ impl<'data> ModuleEnvironment<'data> {
     /// `ModuleEnvironment` and produces a `ModuleInfoTranslation`.
     pub fn translate(mut self, data: &'data [u8]) -> WasmResult<ModuleInfoTranslation<'data>> {
         assert!(self.result.module_translation_state.is_none());
+        println!("translate data: {:?}", data);
         let module_translation_state = translate_module(data, &mut self)?;
         self.result.module_translation_state = Some(module_translation_state);
         Ok(self.result)

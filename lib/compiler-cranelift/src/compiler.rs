@@ -66,6 +66,7 @@ impl Compiler for CraneliftCompiler {
         module_translation_state: &ModuleTranslationState,
         function_body_inputs: PrimaryMap<LocalFunctionIndex, FunctionBodyData<'_>>,
     ) -> Result<Compilation, CompileError> {
+        println!("cranelift_compile ............");
         let isa = self.config().isa(target);
         let frontend_config = isa.frontend_config();
         let memory_styles = &compile_info.memory_styles;

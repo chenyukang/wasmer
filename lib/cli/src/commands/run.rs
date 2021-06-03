@@ -76,7 +76,9 @@ impl Run {
         if self.debug {
             logging::set_up_logging().unwrap();
         }
+        println!("here in execute");
         self.inner_execute().with_context(|| {
+            println!("debug now!!");
             format!(
                 "failed to run `{}`{}",
                 self.path.display(),
@@ -97,23 +99,26 @@ impl Run {
             let instance = Instance::new(&module, &imports)?;
             let result = self.invoke_function(&instance, &invoke, &self.args)?;
             println!(
-                "{}",
+                "result: {}",
                 result
                     .iter()
                     .map(|val| val.to_string())
                     .collect::<Vec<String>>()
                     .join(" ")
             );
+            println!("now ..... fuck");
             return Ok(());
         }
         #[cfg(feature = "emscripten")]
         {
+            println!("emscripten .....");
             use wasmer_emscripten::{
                 generate_emscripten_env, is_emscripten_module, run_emscripten_instance, EmEnv,
                 EmscriptenGlobals,
             };
             // TODO: refactor this
             if is_emscripten_module(&module) {
+                println!("run in emscripten module !!!");
                 let mut emscripten_globals = EmscriptenGlobals::new(module.store(), &module)
                     .map_err(|e| anyhow!("{}", e))?;
                 let mut em_env = EmEnv::new(&emscripten_globals.data, Default::default());
@@ -152,6 +157,7 @@ impl Run {
         // If WASI is enabled, try to execute it with it
         #[cfg(feature = "wasi")]
         {
+            println!("wasi ...");
             use std::collections::BTreeSet;
             use wasmer_wasi::WasiVersion;
 
@@ -175,6 +181,7 @@ impl Run {
                         }
                     }
 
+                    println!("now in debug ..... here try run WASI");
                     let program_name = self
                         .command_name
                         .clone()
@@ -195,11 +202,12 @@ impl Run {
         }
 
         // Try to instantiate the wasm file, with no provided imports
+        println!("final run .................");
         let imports = imports! {};
         let instance = Instance::new(&module, &imports)?;
         let start: Function = self.try_find_function(&instance, "_start", &[])?;
         start.call(&[])?;
-
+        println!("finished execution ...");
         Ok(())
     }
 

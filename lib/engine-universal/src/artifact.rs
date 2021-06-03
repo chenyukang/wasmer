@@ -66,7 +66,7 @@ impl UniversalArtifact {
         let translation = environ.translate(data).map_err(CompileError::Wasm)?;
 
         let compiler = inner_engine.compiler()?;
-
+    
         // We try to apply the middleware first
         let mut module = translation.module;
         let middlewares = compiler.get_middlewares();
@@ -90,6 +90,7 @@ impl UniversalArtifact {
             table_styles,
         };
 
+        println!("compile the module");
         // Compile the Module
         let compilation = compiler.compile_module(
             &engine.target(),

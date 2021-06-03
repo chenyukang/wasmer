@@ -62,7 +62,8 @@ impl Wasi {
             .envs(self.env_vars.clone())
             .preopen_dirs(self.pre_opened_directories.clone())?
             .map_dirs(self.mapped_dirs.clone())?;
-
+            
+        println!("running WASI ...");   
         #[cfg(feature = "experimental-io-devices")]
         {
             if self.enable_experimental_io_devices {
@@ -77,7 +78,6 @@ impl Wasi {
 
         let start = instance.exports.get_function("_start")?;
         let result = start.call(&[]);
-
         match result {
             Ok(_) => Ok(()),
             Err(err) => {

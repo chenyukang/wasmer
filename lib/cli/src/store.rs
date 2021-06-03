@@ -369,6 +369,7 @@ impl StoreOptions {
     ) -> Result<(Store, EngineType, CompilerType)> {
         let (compiler_config, compiler_type) = self.compiler.get_compiler_config()?;
         let (engine, engine_type) = self.get_engine_with_compiler(target, compiler_config)?;
+        println!("get engine_type: {:?}", engine_type);
         let store = Store::new(&*engine);
         Ok((store, engine_type, compiler_type))
     }
@@ -433,6 +434,7 @@ impl StoreOptions {
                 engine.to_string()
             ),
         };
+        println!("engin_type: {:?}", engine_type);
         Ok((engine, engine_type))
     }
 
