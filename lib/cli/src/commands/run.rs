@@ -340,6 +340,7 @@ impl Run {
                     anyhow!("The module has no exported functions to call.")
                 } else {
                     let suggested_functions = suggest_function_exports(instance.module(), "");
+                    println!("hello .............................");
                     let names = suggested_functions
                         .iter()
                         .take(3)
@@ -349,13 +350,17 @@ impl Run {
                     let suggested_command = format!(
                         "wasmer {} -i {} {}",
                         self.path.display(),
-                        suggested_functions.get(0).unwrap(),
+                        suggested_functions.get(0).unwrap_or(&String::new()),
                         args.join(" ")
                     );
-                    let suggestion = format!(
-                        "Similar functions found: {}.\nTry with: {}",
-                        names, suggested_command
-                    );
+                    let suggestion = if suggested_functions.len() == 0 {
+                        String::from("Can not find any export functions.")
+                    } else {
+                        format!(
+                            "Similar functions found: {}.\nTry with: {}",
+                            names, suggested_command
+                        )
+                    };
                     match e {
                         ExportError::Missing(_) => {
                             anyhow!("No export `{}` found in the module.\n{}", name, suggestion)

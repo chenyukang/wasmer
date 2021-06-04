@@ -10,11 +10,26 @@
 //!
 //! Ready?
 
+use std::fs::File;
+use std::io::prelude::*;
 use wasmer::{imports, wat2wasm, Instance, Module, Store, Value};
 use wasmer_compiler_singlepass::Singlepass;
 use wasmer_engine_universal::Universal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let compiler = Singlepass::default();
+    let store = Store::new(&Universal::new(compiler).engine());
+    let mut file = File::create("orig_bug.wasm")?;
+    let bytes = vec![
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 6, 1, 96, 1, 124, 1, 127, 2, 1, 0, 3, 3, 2, 0, 0, 10, 20,
+        2, 3, 0, 0, 11, 14, 0, 65, 255, 135, 140, 120, 183, 155, 155, 32, 0, 166, 0, 11,
+    ];
+    file.write_all(&bytes);
+    let _ = Module::new(&store, bytes);
+    Ok(())
+}
+
+fn main_backup() -> Result<(), Box<dyn std::error::Error>> {
     // Let's declare the Wasm module with the text representation.
     let wasm_bytes = wat2wasm(
         r#"
@@ -63,4 +78,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "singlepass")]
 fn test_compiler_singlepass() -> Result<(), Box<dyn std::error::Error>> {
     main()
+}
+
+#[test]
+#[cfg(feature = "singlepass")]
+fn test_bug_singlepass() -> Result<(), Box<dyn std::error::Error>> {
+    let jit = wasmer::JIT::new(wasmer::Singlepass::new());
+    let store = wasmer::Store::new(&jit.engine());
+    let bytes = vec![
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 6, 1, 96, 1, 124, 1, 127, 2, 1, 0, 3, 3, 2, 0, 0, 10, 20,
+        2, 3, 0, 0, 11, 14, 0, 65, 255, 135, 140, 120, 183, 155, 155, 32, 0, 166, 0, 11,
+    ];
+    let _ = wasmer::Module::new(&store, bytes);
 }
