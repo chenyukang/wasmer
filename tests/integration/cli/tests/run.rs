@@ -1,6 +1,8 @@
 //! Basic tests for the `run` subcommand
 
 use anyhow::bail;
+use std::fs::File;
+use std::io::prelude::*;
 use std::process::Command;
 use wasmer_integration_tests_cli::{ASSET_PATH, C_ASSET_PATH, WASMER_PATH};
 
@@ -65,6 +67,15 @@ fn run_no_imports_wasm_works() -> anyhow::Result<()> {
 
 #[test]
 fn run_no_start_wasm_report_error() -> anyhow::Result<()> {
+    let bytes = vec![
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 6, 1, 96, 1, 124, 1, 127, 2, 1, 0, 3, 3, 2, 0, 0, 10, 20,
+        2, 3, 0, 0, 11, 14, 0, 65, 255, 135, 140, 120, 183, 155, 155, 32, 0, 166, 0, 11,
+    ];
+
+    let mut file = File::create("binary_bug.wasm")?;
+    // Write a slice of bytes to the file
+    file.write_all(&bytes)?;
+
     let output = Command::new(WASMER_PATH)
         .arg("run")
         .arg(test_no_start_wat_path())

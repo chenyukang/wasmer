@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://github.com/wasmerio/wasmer/issues/2385
+HostUrl=https://github-releases.githubusercontent.com/373336061/94818c80-c4a8-11eb-9c07-99150299ef05?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20210604%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20210604T075206Z&X-Amz-Expires=300&X-Amz-Signature=d6c5c36bfe754ee4540b7962390c548f40b7a65664ca665745c20943b1336e95&X-Amz-SignedHeaders=host&actor_id=230646&key_id=0&repo_id=373336061&response-content-disposition=attachment%3B%20filename%3DPotreeConverter.wasm&response-content-type=application%2Foctet-stream

@@ -472,6 +472,7 @@ build-capi-headless-all: capi-setup
 test: test-compilers test-packages test-examples
 
 test-compilers:
+	echo $(compiler_features)
 	cargo test --release --tests $(compiler_features)
 
 test-packages:

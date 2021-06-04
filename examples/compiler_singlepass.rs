@@ -16,18 +16,23 @@ use wasmer_engine_universal::Universal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Let's declare the Wasm module with the text representation.
-    let wasm_bytes = wat2wasm(
-        r#"
-(module
-  (type $sum_t (func (param i32 i32) (result i32)))
-  (func $sum_f (type $sum_t) (param $x i32) (param $y i32) (result i32)
-    local.get $x
-    local.get $y
-    i32.add)
-  (export "sum" (func $sum_f)))
-"#
-        .as_bytes(),
-    )?;
+    /* let wasm_bytes = wat2wasm(
+            r#"
+    (module
+      (type $sum_t (func (param i32 i32) (result i32)))
+      (func $sum_f (type $sum_t) (param $x i32) (param $y i32) (result i32)
+        local.get $x
+        local.get $y
+        i32.add)
+      (export "sum" (func $sum_f)))
+    "#
+            .as_bytes(),
+        )?;
+     */
+    let wasm_bytes = vec![
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 6, 1, 96, 1, 124, 1, 127, 2, 1, 0, 3, 3, 2, 0, 0, 10, 20,
+        2, 3, 0, 0, 11, 14, 0, 65, 255, 135, 140, 120, 183, 155, 155, 32, 0, 166, 0, 11,
+    ];
 
     // Use Singlepass compiler with the default settings
     let compiler = Singlepass::default();
