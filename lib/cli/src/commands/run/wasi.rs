@@ -54,6 +54,7 @@ impl Wasi {
 
     /// Helper function for executing Wasi from the `Run` command.
     pub fn execute(&self, module: Module, program_name: String, args: Vec<String>) -> Result<()> {
+        println!("WASI execute ..... ");
         let args = args.iter().cloned().map(|arg| arg.into_bytes());
 
         let mut wasi_state_builder = WasiState::new(program_name);

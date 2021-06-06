@@ -621,6 +621,7 @@ impl WasiFile for HostFile {
     }
 
     fn rename_file(&self, new_name: &std::path::Path) -> Result<(), WasiFsError> {
+        println!("rename_file: {:?}", new_name);
         std::fs::rename(&self.host_path, new_name).map_err(Into::into)
     }
 

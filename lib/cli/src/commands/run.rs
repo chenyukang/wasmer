@@ -184,6 +184,7 @@ impl Run {
                                 .map(|f| f.to_string_lossy().to_string())
                         })
                         .unwrap_or_default();
+                    println!("running WASI mode: {:?}", program_name);
                     return self
                         .wasi
                         .execute(module, program_name, self.args.clone())

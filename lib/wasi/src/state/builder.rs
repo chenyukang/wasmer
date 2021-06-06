@@ -228,6 +228,7 @@ impl WasiStateBuilder {
     where
         FilePath: AsRef<Path>,
     {
+        println!("alias: {:?} po_dir: {:?}", alias, po_dir.as_ref());
         let mut pdb = PreopenDirBuilder::new();
         let path = po_dir.as_ref();
         pdb.directory(path)
@@ -380,6 +381,7 @@ impl WasiStateBuilder {
                 .map_err(WasiStateCreationError::WasiFsError)?;
         }
         if let Some(f) = &self.setup_fs_fn {
+            println!("wasi_fs: {:?}", wasi_fs);
             f(&mut wasi_fs).map_err(WasiStateCreationError::WasiFsSetupError)?;
         }
         Ok(WasiState {

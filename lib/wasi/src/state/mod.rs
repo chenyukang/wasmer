@@ -168,6 +168,7 @@ pub struct WasiFs {
 impl WasiFs {
     /// Created for the builder API. like `new` but with more information
     pub(crate) fn new_with_preopen(preopens: &[PreopenedDir]) -> Result<Self, String> {
+        println!("debug now new_with_preopen !!!");
         let (mut wasi_fs, root_inode) = Self::new_init()?;
 
         for PreopenedDir {
@@ -178,7 +179,7 @@ impl WasiFs {
             create,
         } in preopens
         {
-            debug!(
+            println!(
                 "Attempting to preopen {} with alias {:?}",
                 &path.to_string_lossy(),
                 &alias
@@ -493,6 +494,7 @@ impl WasiFs {
         rights_inheriting: __wasi_rights_t,
         flags: __wasi_fdflags_t,
     ) -> Result<__wasi_fd_t, WasiFsError> {
+        println!("open_file_at: {:?}", name);
         let base_fd = self.get_fd(base).map_err(WasiFsError::from_wasi_err)?;
         // TODO: check permissions here? probably not, but this should be
         // an explicit choice, so justify it in a comment when we remove this one
@@ -541,6 +543,7 @@ impl WasiFs {
         fd: __wasi_fd_t,
         file: Box<dyn WasiFile>,
     ) -> Result<Option<Box<dyn WasiFile>>, WasiFsError> {
+        println!("debug swap_file!!!!!!!!!!!!!");
         let mut ret = Some(file);
         match fd {
             __WASI_STDIN_FILENO => {
@@ -613,6 +616,10 @@ impl WasiFs {
             return Err(__WASI_EMLINK);
         }
 
+        println!("get_inode_at_path: {:?}", path);
+        if path.to_string() == String::from("source/hello.o") {
+            println!("debug now!!!");
+        }
         let base_dir = self.get_fd(base)?;
         let path: &Path = Path::new(path);
 
@@ -624,6 +631,7 @@ impl WasiFs {
             let last_component = i + 1 == n_components;
             // for each component traverse file structure
             // loading inodes as necessary
+            println!("path: {:?} component: {:?}", path, component);
             'symlink_resolution: while symlink_count < MAX_SYMLINKS {
                 match &mut self.inodes[cur_inode].kind {
                     Kind::Buffer { .. } => unimplemented!("state::get_inode_at_path for buffers"),
@@ -655,10 +663,21 @@ impl WasiFs {
                             let file = {
                                 let mut cd = path.clone();
                                 cd.push(component);
+                                println!(
+                                    "cd !!!!!!!!!!!!!: component: {:?}  path: {:?} => {:?}",
+                                    component, path, cd
+                                );
                                 cd
                             };
+                            println!("component ====> {:?}", component);
                             let metadata = file.symlink_metadata().ok().ok_or(__WASI_EINVAL)?;
+                            println!("finished ;;;;;;;;;;;;;;;;;;;;;; {:?}", component);
                             let file_type = metadata.file_type();
+
+                            println!(
+                                "component ====> {:?}  file_type: {:?}",
+                                component, file_type
+                            );
                             // we want to insert newly opened dirs and files, but not transient symlinks
                             // TODO: explain why (think about this deeply when well rested)
                             let should_insert;
@@ -697,6 +716,7 @@ impl WasiFs {
                                     relative_path: link_value,
                                 }
                             } else {
+                                println!("component here!!!: {:?}", component);
                                 #[cfg(unix)]
                                 {
                                     use std::os::unix::fs::FileTypeExt;
@@ -744,6 +764,7 @@ impl WasiFs {
                                         );
                                     }
                                     // perhaps just continue with symlink resolution and return at the end
+                                    println!("return early!!!!!!!!!!!!!!!");
                                     return Ok(new_inode);
                                 }
                                 #[cfg(not(unix))]
@@ -785,10 +806,12 @@ impl WasiFs {
                         {
                             cur_inode = *entry;
                         } else {
+                            println!("return early2: {:?} =====> EINVAL", path);
                             return Err(__WASI_EINVAL);
                         }
                     }
                     Kind::File { .. } => {
+                        println!("return early3: {:?} =====> __WASI_ENOTDIR", path);
                         return Err(__WASI_ENOTDIR);
                     }
                     Kind::Symlink {
@@ -832,6 +855,7 @@ impl WasiFs {
             }
         }
 
+        println!("{:?} => {:?}", path, cur_inode);
         Ok(cur_inode)
     }
 
@@ -856,7 +880,7 @@ impl WasiFs {
                 max_seen: usize,
             },
         }
-
+        println!("path_into_pre_open_and_relative_path: {:?}", path);
         impl<'a> BaseFdAndRelPath<'a> {
             const fn max_seen(&self) -> usize {
                 match self {
@@ -946,6 +970,7 @@ impl WasiFs {
         path: &Path,
         follow_symlinks: bool,
     ) -> Result<(Inode, String), __wasi_errno_t> {
+        println!("get_parent_inode_at_path: {:?}", path);
         let mut parent_dir = std::path::PathBuf::new();
         let mut components = path.components().rev();
         let new_entity_name = components
@@ -1104,6 +1129,7 @@ impl WasiFs {
         is_preopened: bool,
         name: String,
     ) -> Result<Inode, __wasi_errno_t> {
+        println!("create_inode: {:?}", name);
         let stat = self.get_stat_for_kind(&kind).ok_or(__WASI_EIO)?;
         Ok(self.create_inode_with_stat(kind, is_preopened, name, stat))
     }

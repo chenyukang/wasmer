@@ -31,6 +31,7 @@ pub fn parse_mapdir(entry: &str) -> Result<(String, PathBuf)> {
     }
     // And then we try splitting by `:` (for compatibility with previous API)
     else if let [alias, real_dir] = entry.split(':').collect::<Vec<&str>>()[..] {
+        println!("alias: {:?} real_dir: {:?}", alias, real_dir);
         retrieve_alias_pathbuf(alias, real_dir)
     } else {
         bail!(
