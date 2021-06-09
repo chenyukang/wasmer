@@ -74,7 +74,7 @@ impl Compiler for SinglepassCompiler {
         let import_trampolines: PrimaryMap<SectionIndex, _> = (0..module.num_imported_functions)
             .map(FunctionIndex::new)
             .collect::<Vec<_>>()
-            .into_par_iter_if_rayon()
+            .into_iter()
             .map(|i| {
                 gen_import_call_trampoline(&vmoffsets, i, &module.signatures[module.functions[i]])
             })
