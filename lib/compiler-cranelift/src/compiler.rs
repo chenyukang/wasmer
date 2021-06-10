@@ -19,7 +19,7 @@ use cranelift_codegen::{binemit, Context};
 #[cfg(feature = "unwind")]
 use gimli::write::{Address, EhFrame, FrameTable};
 use loupe::MemoryUsage;
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+//use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use std::sync::Arc;
 use wasmer_compiler::CompileError;
 use wasmer_compiler::{CallingConvention, ModuleTranslationState, Target};
@@ -102,11 +102,12 @@ impl Compiler for CraneliftCompiler {
             }
         };
 
+        let func_translator: &mut FuncTranslator = &mut FuncTranslator::new();
         let functions = function_body_inputs
             .iter()
             .collect::<Vec<(LocalFunctionIndex, &FunctionBodyData<'_>)>>()
-            .par_iter()
-            .map_init(FuncTranslator::new, |func_translator, (i, input)| {
+            .iter()
+            .map(|(i, input)| {
                 let func_index = module.func_index(*i);
                 let mut context = Context::new();
                 let mut func_env = FuncEnvironment::new(
@@ -226,28 +227,26 @@ impl Compiler for CraneliftCompiler {
         let (custom_sections, dwarf) = (PrimaryMap::new(), None);
 
         // function call trampolines (only for local functions, by signature)
+        let cx: &mut FunctionBuilderContext = &mut FunctionBuilderContext::new();
         let function_call_trampolines = module
             .signatures
             .values()
             .collect::<Vec<_>>()
-            .par_iter()
-            .map_init(FunctionBuilderContext::new, |mut cx, sig| {
-                make_trampoline_function_call(&*isa, &mut cx, sig)
-            })
+            .iter()
+            .map(|sig| make_trampoline_function_call(&*isa, cx, sig))
             .collect::<Result<Vec<FunctionBody>, CompileError>>()?
             .into_iter()
             .collect::<PrimaryMap<SignatureIndex, FunctionBody>>();
 
         use wasmer_vm::VMOffsets;
+        let cx2: &mut FunctionBuilderContext = &mut FunctionBuilderContext::new();
         let offsets = VMOffsets::new_for_trampolines(frontend_config.pointer_bytes());
         // dynamic function trampolines (only for imported functions)
         let dynamic_function_trampolines = module
             .imported_function_types()
             .collect::<Vec<_>>()
-            .par_iter()
-            .map_init(FunctionBuilderContext::new, |mut cx, func_type| {
-                make_trampoline_dynamic_function(&*isa, &offsets, &mut cx, &func_type)
-            })
+            .iter()
+            .map(|func_type| make_trampoline_dynamic_function(&*isa, &offsets, cx2, &func_type))
             .collect::<Result<Vec<_>, CompileError>>()?
             .into_iter()
             .collect::<PrimaryMap<FunctionIndex, FunctionBody>>();

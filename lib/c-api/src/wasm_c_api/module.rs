@@ -14,12 +14,6 @@ pub struct wasm_module_t {
     pub(crate) inner: Arc<Module>,
 }
 
-impl Drop for wasm_module_t {
-    fn drop(&mut self) {
-        println!("wasm_module drop .....)");
-    }
-}
-
 /// A WebAssembly module contains stateless WebAssembly code that has
 /// already been compiled and can be instantiated multiple times.
 ///
@@ -56,9 +50,7 @@ pub unsafe extern "C" fn wasm_module_new(
 ///
 /// See [`wasm_module_new`].
 #[no_mangle]
-pub unsafe extern "C" fn wasm_module_delete(_module: Option<Box<wasm_module_t>>) {
-    println!("debug here .....");
-}
+pub unsafe extern "C" fn wasm_module_delete(_module: Option<Box<wasm_module_t>>) {}
 
 /// Validates a new WebAssembly module given the configuration
 /// in the [store][super::store].
