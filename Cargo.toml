@@ -281,3 +281,8 @@ required-features = ["cranelift"]
 name = "features"
 path = "examples/features.rs"
 required-features = ["cranelift"]
+
+[[example]]
+name = "cache"
+path = "examples/cache.rs"
+required-features = ["cranelift", "cache"]
