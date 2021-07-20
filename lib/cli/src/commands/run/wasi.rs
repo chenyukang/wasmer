@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use wasmer::{Instance, Module};
 use wasmer_wasi::{get_wasi_versions, WasiError, WasiState, WasiVersion};
 
+use super::utils::*;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Clone)]
@@ -52,17 +53,19 @@ impl Wasi {
         get_wasi_versions(&module, false).is_some()
     }
 
-    pub fn wasi_instance(
+    /// Helper function for executing Wasi from the `Run` command.
+    pub fn execute(
         &self,
         module: Module,
         program_name: String,
+        entry_func: &str,
         args: Vec<String>,
-    ) -> Result<Instance> {
-        let args = args.iter().cloned().map(|arg| arg.into_bytes());
+    ) -> Result<()> {
+        let wasi_args = args.iter().cloned().map(|arg| arg.into_bytes());
 
         let mut wasi_state_builder = WasiState::new(program_name);
         wasi_state_builder
-            .args(args)
+            .args(wasi_args)
             .envs(self.env_vars.clone())
             .preopen_dirs(self.pre_opened_directories.clone())?
             .map_dirs(self.mapped_dirs.clone())?;
@@ -78,36 +81,21 @@ impl Wasi {
         let mut wasi_env = wasi_state_builder.finalize()?;
         let resolver = wasi_env.import_object_for_all_wasi_versions(&module)?;
         let instance = Instance::new(&module, &resolver)?;
-        Ok(instance)
-    }
-
-    /// Helper function for executing Wasi from the `Run` command.
-    pub fn execute(&self, module: Module, program_name: String, args: Vec<String>) -> Result<()> {
-        let args = args.iter().cloned().map(|arg| arg.into_bytes());
-
-        let mut wasi_state_builder = WasiState::new(program_name);
-        wasi_state_builder
-            .args(args)
-            .envs(self.env_vars.clone())
-            .preopen_dirs(self.pre_opened_directories.clone())?
-            .map_dirs(self.mapped_dirs.clone())?;
-
-        #[cfg(feature = "experimental-io-devices")]
-        {
-            if self.enable_experimental_io_devices {
-                wasi_state_builder
-                    .setup_fs(Box::new(wasmer_wasi_experimental_io_devices::initialize));
-            }
-        }
-
-        let mut wasi_env = wasi_state_builder.finalize()?;
-        let resolver = wasi_env.import_object_for_all_wasi_versions(&module)?;
-        let instance = Instance::new(&module, &resolver)?;
-        let start = instance.exports.get_function("_start")?;
-        let result = start.call(&[]);
+        let start = instance.exports.get_function(entry_func)?;
+        let invoke_args = mapping_function_args(&start, &args)?;
+        let result = start.call(&invoke_args);
 
         match result {
-            Ok(_) => Ok(()),
+            Ok(val) => {
+                println!(
+                    "{}",
+                    val.iter()
+                        .map(|val| val.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                );
+                Ok(())
+            }
             Err(err) => {
                 let err: anyhow::Error = match err.downcast::<WasiError>() {
                     Ok(WasiError::Exit(exit_code)) => {
@@ -120,6 +108,6 @@ impl Wasi {
                 Err(err)
             }
         }
-        .with_context(|| "failed to run WASI `_start` function")
+        .with_context(|| format!("failed to run WASI `{}` function", entry_func))
     }
 }

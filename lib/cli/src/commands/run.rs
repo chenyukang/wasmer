@@ -13,6 +13,7 @@ use wasmer_cache::{Cache, FileSystemCache, Hash};
 
 use structopt::StructOpt;
 
+mod utils;
 #[cfg(feature = "wasi")]
 mod wasi;
 
@@ -91,33 +92,7 @@ impl Run {
 
     fn inner_execute(&self) -> Result<()> {
         let module = self.get_module()?;
-        // Do we want to invoke a function?
 
-        if let Some(ref invoke) = self.invoke {
-            let program_name = self
-                .command_name
-                .clone()
-                .or_else(|| {
-                    self.path
-                        .file_name()
-                        .map(|f| f.to_string_lossy().to_string())
-                })
-                .unwrap_or_default();
-            let instance = self
-                .wasi
-                .wasi_instance(module, program_name, self.args.clone())
-                .with_context(|| "WASI execution failed")?;
-            let result = self.invoke_function(&instance, &invoke, &self.args)?;
-            println!(
-                "{}",
-                result
-                    .iter()
-                    .map(|val| val.to_string())
-                    .collect::<Vec<String>>()
-                    .join(" ")
-            );
-            return Ok(());
-        }
         #[cfg(feature = "emscripten")]
         {
             use wasmer_emscripten::{
@@ -161,6 +136,11 @@ impl Run {
             }
         }
 
+        let entry_func = match &self.invoke {
+            Some(invoke) => invoke,
+            None => "_start",
+        };
+
         // If WASI is enabled, try to execute it with it
         #[cfg(feature = "wasi")]
         {
@@ -168,7 +148,6 @@ impl Run {
             use wasmer_wasi::WasiVersion;
 
             let wasi_versions = Wasi::get_versions(&module);
-            println!("debug top wasi_versions; {:?}", wasi_versions);
             match wasi_versions {
                 Some(wasi_versions) if !wasi_versions.is_empty() => {
                     if wasi_versions.len() >= 2 {
@@ -199,7 +178,7 @@ impl Run {
                         .unwrap_or_default();
                     return self
                         .wasi
-                        .execute(module, program_name, self.args.clone())
+                        .execute(module, program_name, entry_func, self.args.clone())
                         .with_context(|| "WASI execution failed");
                 }
                 // not WASI
@@ -207,12 +186,12 @@ impl Run {
             }
         }
 
+        // Do we want to invoke a function?
         // Try to instantiate the wasm file, with no provided imports
         let imports = imports! {};
         let instance = Instance::new(&module, &imports)?;
-        let start: Function = self.try_find_function(&instance, "_start", &[])?;
-        start.call(&[])?;
-
+        let res = self.invoke_function(&instance, entry_func, &self.args)?;
+        println!("res: {:?}", res);
         Ok(())
     }
 
@@ -387,48 +366,7 @@ impl Run {
         args: &[String],
     ) -> Result<Box<[Val]>> {
         let func: Function = self.try_find_function(&instance, invoke, args)?;
-        let func_ty = func.ty();
-        let required_arguments = func_ty.params().len();
-        let provided_arguments = args.len();
-        if required_arguments != provided_arguments {
-            bail!(
-                "Function expected {} arguments, but received {}: \"{}\"",
-                required_arguments,
-                provided_arguments,
-                self.args.join(" ")
-            );
-        }
-        let invoke_args = args
-            .iter()
-            .zip(func_ty.params().iter())
-            .map(|(arg, param_type)| match param_type {
-                ValType::I32 => {
-                    Ok(Val::I32(arg.parse().map_err(|_| {
-                        anyhow!("Can't convert `{}` into a i32", arg)
-                    })?))
-                }
-                ValType::I64 => {
-                    Ok(Val::I64(arg.parse().map_err(|_| {
-                        anyhow!("Can't convert `{}` into a i64", arg)
-                    })?))
-                }
-                ValType::F32 => {
-                    Ok(Val::F32(arg.parse().map_err(|_| {
-                        anyhow!("Can't convert `{}` into a f32", arg)
-                    })?))
-                }
-                ValType::F64 => {
-                    Ok(Val::F64(arg.parse().map_err(|_| {
-                        anyhow!("Can't convert `{}` into a f64", arg)
-                    })?))
-                }
-                _ => Err(anyhow!(
-                    "Don't know how to convert {} into {:?}",
-                    arg,
-                    param_type
-                )),
-            })
-            .collect::<Result<Vec<_>>>()?;
+        let invoke_args = utils::mapping_function_args(&func, args)?;
         Ok(func.call(&invoke_args)?)
     }
 }
